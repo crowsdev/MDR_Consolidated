@@ -11,7 +11,7 @@ using VRageMath;
 
 namespace IngameScript
 {
-    public class Horizon : MyGridProgram
+    public class Horizon : Untermensch
     {
         #region In-game Script
 
@@ -161,10 +161,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
 
         #region Main methods
 
-        Horizon()
+        Horizon(MyGridProgram _parent, UpdateFrequency _freq) : base(_parent, _freq)
         {
-            Runtime.UpdateFrequency = UpdateFrequency.Update1;
-
+            // Runtime.UpdateFrequency = UpdateFrequency.Update1;
             _runtimeTracker = new RuntimeTracker(new Program()); // change back to 'this'
 
             _artificialHorizon = new ArtificialHorizon(
@@ -215,11 +214,21 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
             _scheduler.AddScheduledAction(MoveNextScreens, 60);
         }
 
-        void Main(string arg)
+        public override bool OnMain(string arg, UpdateType updateSource)
         {
+            #region Check if this should run according to its own frequency.
+
+            if (!base.OnMain(arg, updateSource))
+            {
+                return false;
+            }
+
+            #endregion
             _runtimeTracker.AddRuntime();
             _scheduler.Update();
             _runtimeTracker.AddInstructions();
+
+            return true;
         }
 
         void CalculateAHParams()
@@ -250,22 +259,30 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
         void PlaySounds()
         {
             if (_soundBlocks.Count == 0)
+            {
                 return;
+            }
 
             _collisionSoundTimeSum += 10 * TICK;
 
             if (_collisionSoundTimeSum < _collisionSoundInterval &&
                 _artificialHorizon.CollisionWarning == _lastCollisionWarningState)
+            {
                 return;
+            }
 
             _collisionSoundTimeSum = 0;
 
             foreach (var block in _soundBlocks)
             {
                 if (_artificialHorizon.CollisionWarning)
+                {
                     block.Play();
+                }
                 else
+                {
                     block.Stop();
+                }
             }
 
             _lastCollisionWarningState = _artificialHorizon.CollisionWarning;
@@ -289,14 +306,14 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
 
         void PrintDetailedInfo()
         {
-            Echo(
+            Ubermensch.Echo(
                 $"WMI Artificial Horizon Redux{_runningSymbol.Iterate()}\n(Version {VERSION} - {DATE})\n\nCustomize variables in Custom Data!");
-            Echo(
+            Ubermensch.Echo(
                 $"\nNext refresh in {Math.Max(_scheduledSetup.RunInterval - _scheduledSetup.TimeSinceLastRun, 0):N0} seconds");
-            Echo($"{_lastSetupResult}");
-            Echo($"Text surfaces: {_textSurfaces.Count}\n");
-            Echo($"Reference seat:\n\"{(reference?.CustomName)}\"");
-            Echo(_runtimeTracker.Write());
+            Ubermensch.Echo($"{_lastSetupResult}");
+            Ubermensch.Echo($"Text surfaces: {_textSurfaces.Count}\n");
+            Ubermensch.Echo($"Reference seat:\n\"{(reference?.CustomName)}\"");
+            Ubermensch.Echo(_runtimeTracker.Write());
         }
 
         #endregion
@@ -306,7 +323,7 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
         void ParseIni()
         {
             _ini.Clear();
-            if (_ini.TryParse(Me.CustomData))
+            if (_ini.TryParse(Ubermensch.Me.CustomData))
             {
                 // General
                 _textSurfaceNameTag =
@@ -346,9 +363,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
                 _yAxisColor = MyIniHelper.GetColor(INI_SECTION_COLORS, INI_COLORS_Y_AXIS, _ini, _yAxisColor);
                 _zAxisColor = MyIniHelper.GetColor(INI_SECTION_COLORS, INI_COLORS_Z_AXIS, _ini, _zAxisColor);
             }
-            else if (!string.IsNullOrWhiteSpace(Me.CustomData))
+            else if (!string.IsNullOrWhiteSpace(Ubermensch.Me.CustomData))
             {
-                _ini.EndContent = Me.CustomData;
+                _ini.EndContent = Ubermensch.Me.CustomData;
             }
 
             WriteIni();
@@ -386,8 +403,10 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
                 "Time before predicted collision that the AH will\nwarn you to pull up (-1 disables warning)");
 
             string output = _ini.ToString();
-            if (!string.Equals(output, Me.CustomData))
-                Me.CustomData = output;
+            if (!string.Equals(output, Ubermensch.Me.CustomData))
+            {
+                Ubermensch.Me.CustomData = output;
+            }
         }
 
         #endregion
@@ -429,35 +448,47 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
             _taggedControllers.Clear();
             _allControllers.Clear();
             _soundBlocks.Clear();
-            GridTerminalSystem.GetBlocksOfType<IMyTerminalBlock>(null, PopulateLists);
+            Ubermensch.GridTerminalSystem.GetBlocksOfType<IMyTerminalBlock>(null, PopulateLists);
 
             if (_textSurfaces.Count == 0)
+            {
                 Log.Error(
                     $"No text panels or text surface providers with name tag '{_textSurfaceNameTag}' were found.");
+            }
 
             if (_allControllers.Count == 0)
+            {
                 Log.Error($"No ship controllers were found.");
+            }
             else
             {
                 if (_taggedControllers.Count == 0)
+                {
                     Log.Info(
                         $"No ship controllers with name tag \"{_referenceNameTag}\" were found. Using all available ship controllers. (This is NOT an error!)");
+                }
                 else
+                {
                     Log.Info(
                         $"One or more ship controllers with name tag \"{_referenceNameTag}\" were found. Using these to orient the artificial horizon.");
+                }
             }
 
             if (_soundBlocks.Count == 0)
+            {
                 Log.Info(
                     $"No optional sound blocks with name tag \"{_soundBlockNameTag}\" were found. Sounds will not be played when ground collision is imminent.");
+            }
 
             _lastSetupResult = Log.Write();
         }
 
         bool PopulateLists(IMyTerminalBlock block)
         {
-            if (!block.IsSameConstructAs(Me))
+            if (!block.IsSameConstructAs(Ubermensch.Me))
+            {
                 return false;
+            }
 
             if (StringContains(block.CustomName, _textSurfaceNameTag))
             {
@@ -469,7 +500,10 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
             {
                 _allControllers.Add(controller);
                 if (StringContains(block.CustomName, _referenceNameTag))
+                {
                     _taggedControllers.Add(controller);
+                }
+
                 return false;
             }
 
@@ -497,7 +531,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
 
             var surfaceProvider = block as IMyTextSurfaceProvider;
             if (surfaceProvider == null)
+            {
                 return;
+            }
 
             _textSurfaceIni.Clear();
             bool parsed = _textSurfaceIni.TryParse(block.CustomData);
@@ -514,14 +550,18 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
                 bool display = _textSurfaceIni.Get(INI_SECTION_TEXT_SURF, iniKey)
                     .ToBoolean(i == 0 && !(block is IMyProgrammableBlock));
                 if (display)
+                {
                     textSurfaces.Add(surfaceProvider.GetSurface(i));
+                }
 
                 _textSurfaceIni.Set(INI_SECTION_TEXT_SURF, iniKey, display);
             }
 
             string output = _textSurfaceIni.ToString();
             if (!string.Equals(output, block.CustomData))
+            {
                 block.CustomData = output;
+            }
         }
 
         #endregion
@@ -533,7 +573,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
             foreach (IMyShipController thisController in SCs)
             {
                 if (thisController.IsUnderControl && thisController.CanControlShip)
+                {
                     return thisController;
+                }
             }
 
             return null;
@@ -823,9 +865,13 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
                 CollisionWarning = terrainHeightDerivative > 0 && _speed > 10 &&
                                    timeTillGroundCollision <= _collisionTimeThreshold;
                 if (_lastCollisionWarning != CollisionWarning)
+                {
                     _showPullUp = true;
+                }
                 else
+                {
                     _showPullUp = !_showPullUp;
+                }
 
                 _lastCollisionWarning = CollisionWarning;
                 _lastSurfaceAltitude = _surfaceAltitude;
@@ -836,7 +882,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
 
                 _bearing = MathHelper.ToDegrees(VectorMath.AngleBetween(heading, northVec));
                 if (Vector3D.Dot(controller.WorldMatrix.Forward, eastVec) < 0)
+                {
                     _bearing = 360 - _bearing;
+                }
 
                 _verticalSpeed = VectorMath.ScalarProjection(_velocity, -_gravity);
             }
@@ -863,13 +911,19 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
 
                 // Get normalized axis directions for drawing arrow heads
                 if (!Vector2.IsZero(ref _xAxisFlattened, MathHelper.EPSILON))
+                {
                     _xAxisDirn = Vector2.Normalize(_xAxisFlattened);
+                }
 
                 if (!Vector2.IsZero(ref _yAxisFlattened, MathHelper.EPSILON))
+                {
                     _yAxisDirn = Vector2.Normalize(_yAxisFlattened);
+                }
 
                 if (!Vector2.IsZero(ref _zAxisFlattened, MathHelper.EPSILON))
+                {
                     _zAxisDirn = Vector2.Normalize(_zAxisFlattened);
+                }
 
                 // Getting the icons for the axes based on if they are pointing at or away from the user
                 _axisIcon[0] = GetAxisIcon(xTrans.Z);
@@ -1110,7 +1164,10 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
                 for (int i = -90; i <= 90; i += 30)
                 {
                     if (i == 0)
+                    {
                         continue;
+                    }
+
                     DrawElevationLadder(frame, screenCenter, ELEVATION_LADDER_SIZE, pitchProportion, i, scale,
                         _elevationLineColor, true);
                 }
@@ -1163,7 +1220,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
                 frame.Add(ladderSprite);
 
                 if (!drawText)
+                {
                     return;
+                }
 
                 Vector2 textHorizontalOffset = new Vector2(_rollCos, _rollSin) * (scaledSize.X + 48f * scale) * 0.5f;
                 Vector2 textVerticalOffset = Vector2.UnitY * -24f * scale * (pitchProportion <= 0 ? 0 : 1);
@@ -1180,7 +1239,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
             void DrawSpace(MySpriteDrawFrame frame, Vector2 screenCenter, float halfExtent, float scale)
             {
                 if (!_showXYZAxis)
+                {
                     return;
+                }
 
                 float textSize = scale * STATUS_TEXT_SIZE;
                 float lineSize = scale * AXIS_LINE_WIDTH;
@@ -1237,7 +1298,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
                 Vector2 diff = point1 - point2;
                 float length = diff.Length();
                 if (length > 0)
+                {
                     diff /= length;
+                }
 
                 Vector2 size = new Vector2(length, width);
                 float angle = (float)Math.Acos(Vector2.Dot(diff, Vector2.UnitX));
@@ -1255,7 +1318,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
                 Vector2 diff = point1 - point2;
                 float length = diff.Length();
                 if (length > 0)
+                {
                     diff /= length;
+                }
 
                 Vector2 size = new Vector2(length, width);
                 float angle = (float)Math.Acos(Vector2.Dot(diff, Vector2.UnitX));
@@ -1271,7 +1336,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
                 double depthSin, Color color, Color backColor)
             {
                 if (Math.Abs(flattenedDirection.LengthSquared() - 1) < MathHelper.EPSILON)
+                {
                     flattenedDirection.Normalize();
+                }
 
                 arrowSize.Y *= (float)Math.Sqrt(1 - depthSin * depthSin);
                 Vector2 baseSize = Vector2.One * arrowSize.X;
@@ -1321,9 +1388,14 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
             {
                 var vector = Vector3D.Zero;
                 if (Vector3D.TryParse(ini.Get(sectionName, vectorName).ToString(), out vector))
+                {
                     return vector;
+                }
                 else if (defaultVector.HasValue)
+                {
                     return defaultVector.Value;
+                }
+
                 return default(Vector3D);
             }
 
@@ -1348,9 +1420,13 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
                 if (rgbSplit.Length != 4)
                 {
                     if (defaultChar.HasValue)
+                    {
                         return defaultChar.Value;
+                    }
                     else
+                    {
                         return Color.Transparent;
+                    }
                 }
 
                 int.TryParse(rgbSplit[0].Trim(), out r);
@@ -1358,7 +1434,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
                 int.TryParse(rgbSplit[2].Trim(), out b);
                 bool hasAlpha = int.TryParse(rgbSplit[3].Trim(), out a);
                 if (!hasAlpha)
+                {
                     a = 255;
+                }
 
                 r = MathHelper.Clamp(r, 0, 255);
                 g = MathHelper.Clamp(g, 0, 255);
@@ -1381,10 +1459,14 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
             public static Vector3D SafeNormalize(Vector3D a)
             {
                 if (Vector3D.IsZero(a))
+                {
                     return Vector3D.Zero;
+                }
 
                 if (Vector3D.IsUnit(ref a))
+                {
                     return a;
+                }
 
                 return Vector3D.Normalize(a);
             }
@@ -1405,7 +1487,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
             public static Vector3D Rejection(Vector3D a, Vector3D b) //reject a on b
             {
                 if (Vector3D.IsZero(a) || Vector3D.IsZero(b))
+                {
                     return Vector3D.Zero;
+                }
 
                 return a - a.Dot(b) / b.LengthSquared() * b;
             }
@@ -1416,10 +1500,14 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
             public static Vector3D Projection(Vector3D a, Vector3D b)
             {
                 if (Vector3D.IsZero(a) || Vector3D.IsZero(b))
+                {
                     return Vector3D.Zero;
+                }
 
                 if (Vector3D.IsUnit(ref b))
+                {
                     return a.Dot(b) * b;
+                }
 
                 return a.Dot(b) / b.LengthSquared() * b;
             }
@@ -1430,10 +1518,14 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
             public static double ScalarProjection(Vector3D a, Vector3D b)
             {
                 if (Vector3D.IsZero(a) || Vector3D.IsZero(b))
+                {
                     return 0;
+                }
 
                 if (Vector3D.IsUnit(ref b))
+                {
                     return a.Dot(b);
+                }
 
                 return a.Dot(b) / b.Length();
             }
@@ -1444,10 +1536,14 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
             public static double AngleBetween(Vector3D a, Vector3D b) //returns radians
             {
                 if (Vector3D.IsZero(a) || Vector3D.IsZero(b))
+                {
                     return 0;
+                }
                 else
+                {
                     return Math.Acos(MathHelper.Clamp(a.Dot(b) / Math.Sqrt(a.LengthSquared() * b.LengthSquared()), -1,
                         1));
+                }
             }
 
             /// <summary>
@@ -1456,9 +1552,13 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
             public static double CosBetween(Vector3D a, Vector3D b, bool useSmallestAngle = false) //returns radians
             {
                 if (Vector3D.IsZero(a) || Vector3D.IsZero(b))
+                {
                     return 0;
+                }
                 else
+                {
                     return MathHelper.Clamp(a.Dot(b) / Math.Sqrt(a.LengthSquared() * b.LengthSquared()), -1, 1);
+                }
             }
 
             /// <summary>
@@ -1496,7 +1596,10 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
             public CircularBuffer(int capacity)
             {
                 if (capacity < 1)
+                {
                     throw new Exception($"Capacity of CircularBuffer ({capacity}) can not be less than 1");
+                }
+
                 Capacity = capacity;
                 _array = new T[Capacity];
             }
@@ -1569,7 +1672,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
                 double deltaTime = Math.Max(0, _program.Runtime.TimeSinceLastRun.TotalSeconds * RUNTIME_TO_REALTIME);
 
                 if (_ignoreFirstRun && _firstRun)
+                {
                     deltaTime = 0;
+                }
 
                 _firstRun = false;
                 _actionsToDispose.Clear();
@@ -1589,7 +1694,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
                 {
                     // If queue is not empty, populate current queued action
                     if (_queuedActions.Count != 0)
+                    {
                         _currentlyQueuedAction = _queuedActions.Dequeue();
+                    }
                 }
 
                 // If queued action is populated
@@ -1783,14 +1890,18 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
             public RunningSymbol(string[] runningSymbols)
             {
                 if (runningSymbols.Length != 0)
+                {
                     _runningSymbols = runningSymbols;
+                }
             }
 
             public RunningSymbol(int increment, string[] runningSymbols)
             {
                 _increment = increment;
                 if (runningSymbols.Length != 0)
+                {
                     _runningSymbols = runningSymbols;
+                }
             }
 
             public string Iterate(int ticks = 1)
@@ -1851,7 +1962,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
             public static string Write(bool preserveLog = false)
             {
                 if (_errorList.Count != 0 && _warningList.Count != 0 && _infoList.Count != 0)
+                {
                     WriteLine("");
+                }
 
                 if (_errorList.Count != 0)
                 {
@@ -1886,7 +1999,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
                 string output = _builder.ToString();
 
                 if (!preserveLog)
+                {
                     Clear();
+                }
 
                 return output;
             }
@@ -2026,7 +2141,9 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
                     int thisWidth = 0;
                     bool contains = _charWidths.TryGetValue(c, out thisWidth);
                     if (!contains)
+                    {
                         thisWidth = monospaceCharWidth; //conservative estimate
+                    }
 
                     wordWidth += (thisWidth + 1);
                 }

@@ -18,7 +18,7 @@ namespace IngameScript
         };
 
         public float TickFactor => (FrequencyFloats[Frequency] / FrequencyFloats[Ubermensch.Runtime.UpdateFrequency]);
-        public float LastTick { get; set; }
+        public float LastTick { get; set; } = 0.0f;
 
         protected Untermensch(MyGridProgram ubermensch, UpdateFrequency frequency = UpdateFrequency.Update100)
         {
@@ -46,7 +46,7 @@ namespace IngameScript
             // Override derived classes.
         }
 
-        public virtual bool TryEcho(out string _txt)
+        public virtual bool TryEcho(ref string _txt)
         {
             _txt = null;
             return false;

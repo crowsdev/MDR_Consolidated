@@ -8,75 +8,82 @@ namespace IngameScript
 {
     public class Doors : Untermensch
     {
+        /*
+         * 0 = no status.
+         * 1 = door has been opened.
+         * 2 = door was 1 but has now been closed.
+         * 3 = timer finished, door 2 opened.
+         */
+        private Dictionary<IMyDoor, int> DoorsInManagedSequence = new Dictionary<IMyDoor, int>();
+
+        // You can add an additional delay (in seconds) between closing the first airlock door and opening the second one (Default: 0).
+        private double airlockDelaySeconds = 0;
+
+        // The script will detect airlocks within a 2 block radius of a just opened door (like back to back sliding doors).
+        // Change this value, if your airlocks are wider:
+        private int airlockRadius = 2;
+
+        // Should hangar doors also be closed and after which time?
+        private bool autoCloseHangarDoors = true;
+
+        private double autoCloseHangarDoorsSeconds = 10;
         // Isy's Simple Doors
         // ===============
         // Version: 1.0.8
         // Date: 2023-05-24
-        
+
         // =======================================================================================
         //                                                                            --- Configuration ---
         // =======================================================================================
-        
+
         // --- Door Auto Close ---
         // =======================================================================================
-        
+
         // The script will automatically close a door 1 seconds after it's being opened. Change this value here if needed:
-        double autoCloseSeconds = 2;
+        private double autoCloseSeconds = 2;
 
-        // Should hangar doors also be closed and after which time?
-        bool autoCloseHangarDoors = true;
-        double autoCloseHangarDoorsSeconds = 10;
-
-        // If you don't want to auto close specific doors, add the manual door keyword to their names
-        // Note: blockname changes are only noticed every ~17 seconds, so it takes some time until your door is really excluded!
-        string manualDoorKeyword = "!manual";
-
-
-        // --- Simple Airlock ---
-        // =======================================================================================
-        
-        // By default, the script will try to find airlocks (two doors close to each other) and manage them. It will close
-        // the just opened door first, then open the other one and close it again (all depending on autoCloseSeconds).
-        // If you don't want this functionality, set this main trigger to false:
-        bool manageAirlocks = false;
-
-        // The script will detect airlocks within a 2 block radius of a just opened door (like back to back sliding doors).
-        // Change this value, if your airlocks are wider:
-        int airlockRadius = 2;
-
-        // To protect the airlock from being opened too early, the script deactivates the second door until the first one is closed
-        // To change this behavior, set the following value to false:
-        bool protectAirlock = true;
-
-        // You can add an additional delay (in seconds) between closing the first airlock door and opening the second one (Default: 0).
-        double airlockDelaySeconds = 0;
-
-        // If two nearby doors are accidentally treated as an airlock but are in fact just regular doors, you can add this keyword
-        // to one or both door's names to disable airlock functionality (autoclose still works).
-        // Note: blockname changes are only noticed every ~17 seconds, so it takes some time until your door is really excluded!
-        string noAirlockKeyword = "!noAirlock";
-        
-        // =======================================================================================
-        //                         --- End of Configuration ---
-        //                  Don't change anything beyond this point!
-        // =======================================================================================
-        
-        List<IMyDoor> T = new List<IMyDoor>();
-        List<IMyDoor> U = new List<IMyDoor>();
-        List<IMyDoor> V = new List<IMyDoor>();
-        int W = 0;
-        Dictionary<IMyDoor, DateTime> X = new Dictionary<IMyDoor, DateTime>();
-        Dictionary<IMyDoor, DateTime> Y = new Dictionary<IMyDoor, DateTime>();
-        Dictionary<IMyDoor, IMyDoor> Z = new Dictionary<IMyDoor, IMyDoor>();
-        Dictionary<IMyDoor, int> a = new Dictionary<IMyDoor, int>();
-
-        string[] b =
+        private string[] b =
         {
             "/", "-", "\\", "|"
         };
 
-        DateTime c = new DateTime();
-        int e = 0;
+        private DateTime timeNow = new DateTime();
+        private int TickCounter = 0;
+
+
+        // --- Simple Airlock ---
+        // =======================================================================================
+
+        // By default, the script will try to find airlocks (two doors close to each other) and manage them. It will close
+        // the just opened door first, then open the other one and close it again (all depending on autoCloseSeconds).
+        // If you don't want this functionality, set this main trigger to false:
+        private bool manageAirlocks = true;
+
+        // If you don't want to auto close specific doors, add the manual door keyword to their names
+        // Note: blockname changes are only noticed every ~17 seconds, so it takes some time until your door is really excluded!
+        private string manualDoorKeyword = "!manual";
+
+        // If two nearby doors are accidentally treated as an airlock but are in fact just regular doors, you can add this keyword
+        // to one or both door's names to disable airlock functionality (autoclose still works).
+        // Note: blockname changes are only noticed every ~17 seconds, so it takes some time until your door is really excluded!
+        private string noAirlockKeyword = "!noAirlock";
+
+        // To protect the airlock from being opened too early, the script deactivates the second door until the first one is closed
+        // To change this behavior, set the following value to false:
+        private bool protectAirlock = true;
+
+        // =======================================================================================
+        //                         --- End of Configuration ---
+        //                  Don't change anything beyond this point!
+        // =======================================================================================
+
+        private List<IMyDoor> ManagedDoors = new List<IMyDoor>();
+        private List<IMyDoor> AllNonHangarDoors = new List<IMyDoor>();
+        private List<IMyDoor> DmgDoors = new List<IMyDoor>();
+        private int LastManagedDoorsCount = 0;
+        private Dictionary<IMyDoor, DateTime> ManagedHangarDoors = new Dictionary<IMyDoor, DateTime>();
+        private Dictionary<IMyDoor, DateTime> DoorsOnTimerDelay = new Dictionary<IMyDoor, DateTime>();
+        private Dictionary<IMyDoor, IMyDoor> AirlockPairs = new Dictionary<IMyDoor, IMyDoor>();
 
         public Doors(MyGridProgram _parent, UpdateFrequency _freq) : base(_parent, _freq)
         {
@@ -88,233 +95,273 @@ namespace IngameScript
         {
             #region Check if this should run according to its own frequency.
 
-            if (!base.OnMain(argument, updateSource)) return false;
+            if (!base.OnMain(argument, updateSource))
+            {
+                return false;
+            }
 
             #endregion
 
-            if (e == 0) S();
-            if (manageAirlocks)
-            {
-                if (e == 0) D();
-                K();
+            if (TickCounter == 0)
+            { // Seems to count to 100 and then resets to 0.
+                CheckForChangedDoorCount();
             }
 
-            Q();
-            R();
-            c += Ubermensch.Runtime.TimeSinceLastRun;
-            if (e >= 99)
+            if (manageAirlocks)
             {
-                e = 0;
+                if (TickCounter == 0)
+                {
+                    FindAirlockDoorPairs();
+                }
+
+                HandleAirlocks();
+            }
+
+            
+            HandleHangarDoors();
+            timeNow += Ubermensch.Runtime.TimeSinceLastRun;
+            if (TickCounter >= 99)
+            {
+                TickCounter = 0;
             }
             else
             {
-                e++;
+                TickCounter++;
             }
 
             return true;
         }
 
-        void S()
+        private void CheckForChangedDoorCount()
         {
-            V
-                .Clear();
-            Ubermensch.GridTerminalSystem.GetBlocksOfType(T, B);
-            if (T.Count != W)
+            DmgDoors.Clear();
+            Ubermensch.GridTerminalSystem.GetBlocksOfType(ManagedDoors, CheckDoorIsValid);
+            if (ManagedDoors.Count != LastManagedDoorsCount)
             {
-                W = T.Count;
-                X.Clear();
-                Z.Clear();
-                a.Clear();
+                LastManagedDoorsCount = ManagedDoors.Count;
+                ManagedHangarDoors.Clear();
+                AirlockPairs.Clear();
+                DoorsInManagedSequence.Clear();
             }
         }
 
-        bool B(IMyDoor
-            C)
+        private bool CheckDoorIsValid(IMyDoor _door)
         {
-            if (!C.IsSameConstructAs(Ubermensch.Me)) return false;
-            if (!C.CubeGrid.GetCubeBlock(C.Position).IsFullIntegrity)
+            // if door from different grid, discard.
+            if (!_door.IsSameConstructAs(Ubermensch.Me))
             {
-                V.Add(C);
-                return
-                    false;
+                return false;
             }
 
-            if (C.CustomName.Contains(manualDoorKeyword)) return false;
-            if (!autoCloseHangarDoors && C is IMyAirtightHangarDoor)
-                return
-                    false;
+            if (!_door.CubeGrid.GetCubeBlock(_door.Position).IsFullIntegrity)
+            {
+                DmgDoors.Add(_door);
+                return false;
+            }
+
+            if (_door.CustomName.Contains(manualDoorKeyword))
+            {
+                return false;
+            }
+
+            if (!autoCloseHangarDoors && _door is IMyAirtightHangarDoor)
+            {
+                return false;
+            }
+
             return true;
         }
 
-        void D()
-        {
-            Vector3 E = new Vector3();
-            float F = 0;
-            float G = float.MaxValue;
-            int H = -1;
-            U.Clear();
-            Z.Clear();
-            U = T.FindAll
-                (I => !(I is IMyAirtightHangarDoor));
-            foreach (var C in U)
+        private void FindAirlockDoorPairs()
+        { // Called once every 100 ticks.
+            var myDoorPosition = new Vector3();
+            float distance = 0;
+            var minDistance = float.MaxValue;
+            var closestDoorIndex = -1;
+            AllNonHangarDoors.Clear();
+            AirlockPairs.Clear();
+            AllNonHangarDoors = ManagedDoors.FindAll(I => !(I is IMyAirtightHangarDoor));
+            foreach (var myDoor in AllNonHangarDoors)
             {
-                if (C.CustomName.Contains(noAirlockKeyword)) continue;
-                E = C.Position;
-                G
-                    = float.MaxValue;
-                H = -1;
-                for (int J = 0; J < U.Count; J++)
+                if (myDoor.CustomName.Contains(noAirlockKeyword))
                 {
-                    if (U[J] == C) continue;
-                    if (U[J].CustomName.Contains(noAirlockKeyword))
-                        continue;
-                    F = Vector3.Distance(E, U[J].Position);
-                    if (F <= airlockRadius && F < G)
+                    continue;
+                }
+
+                myDoorPosition = myDoor.Position;
+                minDistance = float.MaxValue;
+                closestDoorIndex = -1;
+                for (var J = 0; J < AllNonHangarDoors.Count; J++)
+                {
+                    // Finding door pairs to manage as airlocks. 
+                    if (AllNonHangarDoors[J] == myDoor)
                     {
-                        G = F;
-                        H = J;
-                        if (F == 1) break;
+                        continue;
+                    }
+
+                    if (AllNonHangarDoors[J].CustomName.Contains(noAirlockKeyword))
+                    {
+                        continue;
+                    }
+
+                    distance = Vector3.Distance(myDoorPosition, AllNonHangarDoors[J].Position);
+                    if (distance <= airlockRadius && distance < minDistance)
+                    { // Check that distance between door pair is within airlockRadius setting and if its closest door checked so far.
+                        minDistance = distance;
+                        closestDoorIndex = J;
+                        if (distance == 1)
+                        {
+                            break;
+                        }
                     }
                 }
 
-                if (H >= 0)
+                // Check if a valid airlock door pair was found at all.
+                if (closestDoorIndex >= 0)
                 {
-                    Z[C] = U[H];
+                    AirlockPairs[myDoor] = AllNonHangarDoors[closestDoorIndex];
                 }
             }
         }
 
-        void K()
+        private void HandleAirlocks()
         {
-            foreach (var L in Z)
+            foreach (var L in AirlockPairs)
             {
-                IMyDoor M = L.Key;
-                IMyDoor N = L.Value;
-                bool O = Y.ContainsKey(M)
-                    ? (c - Y[M]).TotalMilliseconds >= airlockDelaySeconds *
+                var alDoor0 = L.Key;
+                var alDoor1 = L.Value;
+                // Check if enough time has passed since last time this pair was managed, if not then 
+                var delayTimerElapsed = DoorsOnTimerDelay.ContainsKey(alDoor0)
+                    ? (timeNow - DoorsOnTimerDelay[alDoor0]).TotalMilliseconds >= airlockDelaySeconds *
                     1000
                     : true;
-                int P = a.ContainsKey(M) ? a[M] : 0;
+                var managerSequenceState = DoorsInManagedSequence.ContainsKey(alDoor0) ? DoorsInManagedSequence[alDoor0] : 0;
                 if (protectAirlock)
                 {
-                    if ((M.Enabled == false && N.Enabled == false) ||
-                        (M.Status != DoorStatus.Closed && N.Status != DoorStatus.Closed))
+                    if ((alDoor0.Enabled == false && alDoor1.Enabled == false) || (alDoor0.Status != DoorStatus.Closed && alDoor1.Status != DoorStatus.Closed))
                     {
-                        M.Enabled = true;
-                        N.Enabled = true;
+                        alDoor0.Enabled = true;
+                        alDoor1.Enabled = true;
                     }
-                    else if (M.Status != DoorStatus.Closed || !O || P == 1)
+                    else if (alDoor0.Status != DoorStatus.Closed || !delayTimerElapsed || managerSequenceState == 1)
                     {
-                        N.Enabled =
-                            false;
+                        /*
+                         * if first airlock door is not FULLY closed, or if delay timer still active, or if door has been
+                         * opened:
+                         *      Disable the last door of airlock pair.
+                         */
+                        alDoor1.Enabled = false;
                     }
                     else
                     {
-                        N.Enabled = true;
+                        alDoor1.Enabled = true;
                     }
                 }
 
-                if (a.ContainsKey(N)) continue;
-                if (M.Status == DoorStatus.Open)
+                if (DoorsInManagedSequence.ContainsKey(alDoor1))
                 {
-                    a[M] = 1;
+                    continue;
                 }
 
-                if (a.ContainsKey(M))
+                if (alDoor0.Status == DoorStatus.Open)
                 {
-                    if (a[M]
-                        == 1 && M.Status == DoorStatus.Closed)
+                    DoorsInManagedSequence[alDoor0] = 1;
+                }
+
+                if (DoorsInManagedSequence.ContainsKey(alDoor0))
+                {
+                    if (DoorsInManagedSequence[alDoor0] == 1 && alDoor0.Status == DoorStatus.Closed)
                     {
-                        Y[M] = c;
-                        a[M] = 2;
+                        DoorsOnTimerDelay[alDoor0] = timeNow;
+                        DoorsInManagedSequence[alDoor0] = 2;
                         continue;
                     }
 
-                    if (a[M] == 2 && O)
+                    if (DoorsInManagedSequence[alDoor0] == 2 && delayTimerElapsed)
                     {
-                        Y.Remove(M);
-                        a[M] = 3;
-                        N.OpenDoor();
+                        // First door is now closed, delay timer finished, open final airlock door.
+                        DoorsOnTimerDelay.Remove(alDoor0);
+                        DoorsInManagedSequence[alDoor0] = 3;
+                        alDoor1.OpenDoor();
                     }
 
-                    if (a[M] == 3 && N.Status == DoorStatus.Closed)
+                    if (DoorsInManagedSequence[alDoor0] == 3 && alDoor1.Status == DoorStatus.Closed)
                     {
-                        a.Remove(M);
+                        DoorsInManagedSequence.Remove(alDoor0);
                     }
                 }
             }
         }
 
-        void Q()
+        private void HandleHangarDoors()
         {
-            foreach (var C in T)
+            foreach (var myDoor in ManagedDoors)
             {
-                if (C.Status == DoorStatus.Open)
+                if (myDoor.Status == DoorStatus.Open)
                 {
-                    if (!X.ContainsKey(C))
+                    if (!ManagedHangarDoors.ContainsKey(myDoor))
                     {
-                        X[
-                            C] = C is IMyAdvancedDoor ? c + TimeSpan.FromSeconds(1) : c;
+                        ManagedHangarDoors[myDoor] = myDoor is IMyAdvancedDoor ? timeNow + TimeSpan.FromSeconds(1) : timeNow;
                         continue;
                     }
 
-                    if (C is IMyAirtightHangarDoor)
+                    if (myDoor is IMyAirtightHangarDoor)
                     {
-                        if ((c - X[C]).TotalMilliseconds >= autoCloseHangarDoorsSeconds * 1000)
+                        if ((timeNow - ManagedHangarDoors[myDoor]).TotalMilliseconds >= autoCloseHangarDoorsSeconds * 1000)
                         {
-                            C.CloseDoor();
-                            X.Remove(C);
+                            myDoor.CloseDoor();
+                            ManagedHangarDoors.Remove(myDoor);
                         }
                     }
                     else
                     {
-                        if ((c - X[C]).TotalMilliseconds >= autoCloseSeconds *
+                        if ((timeNow - ManagedHangarDoors[myDoor]).TotalMilliseconds >= autoCloseSeconds *
                             1000)
                         {
-                            C.CloseDoor();
-                            X.Remove(C);
+                            myDoor.CloseDoor();
+                            ManagedHangarDoors.Remove(myDoor);
                         }
                     }
                 }
             }
         }
 
-        void R()
+        public override bool TryEcho(ref string _txt)
         {
-            StringBuilder A = new StringBuilder("Isy's Simple Doors " + b[e % 4] +
-                                                "\n================\n\n");
-            A.Append("Refreshing cached doors in: " + Math.Ceiling((double)(99 - e) / 6) + "s\n\n");
-            A.Append("Managed doors: " + T.Count +
+            var echoLines = new StringBuilder("Isy's Simple Doors " + b[TickCounter % 4] +
+                                      "\n================\n\n");
+            echoLines.Append("Refreshing cached doors in: " + Math.Ceiling((double)(99 - TickCounter) / 6) + "s\n\n");
+            echoLines.Append("Managed doors: " + ManagedDoors.Count +
                      "\n");
-            A.Append("Door close seconds: " + autoCloseSeconds + "\n");
+            echoLines.Append("Door close seconds: " + autoCloseSeconds + "\n");
             if (autoCloseHangarDoors)
             {
-                A.Append("Hangar door close seconds: "
+                echoLines.Append("Hangar door close seconds: "
                          + autoCloseHangarDoorsSeconds + "\n");
             }
 
             if (manageAirlocks)
             {
-                A.Append("\n");
-                A.Append("Airlocks: " + Z.Count / 2 + "\n");
-                A.Append(
+                echoLines.Append("\n");
+                echoLines.Append("Airlocks: " + AirlockPairs.Count / 2 + "\n");
+                echoLines.Append(
                     "Airlock delay seconds: " + airlockDelaySeconds + "\n");
-                A.Append("Airlock protection: " + (protectAirlock ? "true" : "false"));
-                A.Append("\n");
+                echoLines.Append("Airlock protection: " + (protectAirlock ? "true" : "false"));
+                echoLines.Append("\n");
             }
 
-            if (V.Count > 0
-               )
+            if (DmgDoors.Count > 0)
             {
-                A.Append("\n");
-                A.Append("Damaged doors: " + V.Count + "\n");
-                foreach (var C in V)
+                echoLines.Append("\n");
+                echoLines.Append("Damaged doors: " + DmgDoors.Count + "\n");
+                foreach (var C in DmgDoors)
                 {
-                    A.Append("- " + C.CustomName + "\n");
+                    echoLines.Append("- " + C.CustomName + "\n");
                 }
             }
 
-            Ubermensch.Echo(A.ToString());
+            _txt = echoLines.ToString();
+            return true;
         }
     }
 }

@@ -22,29 +22,29 @@ namespace IngameScript
 {
     public partial class Program : MyGridProgram
     {
-        public List<(UntermenschType untermenschType, Untermensch untermensch)> Judenlager;
+        public Dictionary<UntermenschType,Untermensch> Judenlager;
         public UpdateFrequency Frequency = UpdateFrequency.Update100;
         
         public Program()
         {
-            Judenlager = new List<(UntermenschType untermenschType, Untermensch untermensch)>()
+            Judenlager = new Dictionary<UntermenschType,Untermensch>()
             {
-                { (UntermenschType.Thrust, new Thrust(this, UpdateFrequency.Update10)) },
-                { (UntermenschType.Doors, new Doors(this, UpdateFrequency.Update10)) },
-                { (UntermenschType.FuelManager, new FuelManager(this, UpdateFrequency.Update100)) }
+                { UntermenschType.Thrust, new Thrust(this, UpdateFrequency.Update10) },
+                { UntermenschType.Doors, new Doors(this, UpdateFrequency.Update10) },
+                { UntermenschType.FuelManager, new FuelManager(this, UpdateFrequency.Update100) }
             };
 
             #region Set update-frequency to fastest required by slaves.
 
-            if (Judenlager.Any(x => x.untermensch.Frequency == UpdateFrequency.Update1))
+            if (Judenlager.Any(x => x.Value.Frequency == UpdateFrequency.Update1))
             {
                 Frequency = UpdateFrequency.Update1;
             }
-            else if (Judenlager.Any(x => x.untermensch.Frequency == UpdateFrequency.Update10))
+            else if (Judenlager.Any(x => x.Value.Frequency == UpdateFrequency.Update10))
             {
                 Frequency = UpdateFrequency.Update10;
             }
-            else if (Judenlager.Any(x => x.untermensch.Frequency == UpdateFrequency.Update100))
+            else if (Judenlager.Any(x => x.Value.Frequency == UpdateFrequency.Update100))
             {
                 Frequency = UpdateFrequency.Update100;
             }
@@ -54,20 +54,23 @@ namespace IngameScript
 
         public void Save()
         {
-            Judenlager.ForEach(x => x.untermensch.OnSave());
+            foreach (var kvp0 in Judenlager)
+            {
+                kvp0.Value.OnSave();
+            }
         }
 
         public void Main(string argument, UpdateType updateSource)
         {
-            Judenlager.ForEach(x =>
+            foreach (var x in Judenlager)
             {
-                x.untermensch.OnMain(argument, updateSource);
-                
-                if (x.untermensch.TryEcho(out string echoTxt))
+                x.Value.OnMain(argument, updateSource);
+                string echoTxt = "";
+                if (x.Value.TryEcho(ref echoTxt))
                 {
                     this.Echo(echoTxt);
                 }
-            });
+            }
         }
     }
 }

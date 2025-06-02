@@ -1,12 +1,11 @@
 using System.Collections.Generic;
+using System.Linq;
 using Sandbox.ModAPI.Ingame;
 
 namespace IngameScript
 {
     public class Thrust : Untermensch
     {
-        internal UpdateFrequency Frequency = UpdateFrequency.Update100;
-
         internal string UpThrustGroupName;
         internal List<IMyThrust> UpThrustGroupFunctional;
         internal float UpThrustPercentage;
@@ -22,33 +21,25 @@ namespace IngameScript
             UpThrustGroupFunctional = new List<IMyThrust>();
             UpThrustPercentage = 0f;
             UpThrustUnitCountFunctional = 0;
-            Ubermensch.Me.CustomData = "Pending....";
-            // Ubermensch.Runtime.UpdateFrequency = UpdateFrequency.Update100;
+            // Ubermensch.Me.CustomData = "Pending....";
         }
 
         public override bool OnMain(string argument, UpdateType updateSource)
         {
             #region Check if this should run according to its own frequency.
 
-            if (!base.OnMain(argument, updateSource)) return false;
+            if (!base.OnMain(null, updateSource))
+            {
+                return false;
+            }
 
             #endregion
             
             // Collect the desired thruster blocks.
-            Ubermensch.GridTerminalSystem.GetBlockGroupWithName(UpThrustGroupName).GetBlocksOfType<IMyThrust>(UpThrustGroupFunctional, delegate(IMyThrust thrust) { return thrust.IsFunctional && thrust.Enabled && thrust.IsWorking; });
-            List<IMyThrust> allBlocksInGroup = new List<IMyThrust>();
-            Ubermensch.GridTerminalSystem.GetBlockGroupWithName(UpThrustGroupName).GetBlocksOfType<IMyThrust>(allBlocksInGroup);
-            UpThrustUnitCountTotal = allBlocksInGroup.Count;
-            UpThrustUnitCountFunctional = UpThrustGroupFunctional.Count; // Get the amount of thruster blocks collected.
-            float totalSum = 0f; // Init
-
-            foreach (var thruster in UpThrustGroupFunctional)
-            {
-                totalSum += thruster.CurrentThrustPercentage;
-            }
-
-            UpThrustPercentage = totalSum / UpThrustUnitCountFunctional;
-
+            Ubermensch.GridTerminalSystem.GetBlocksOfType(UpThrustGroupFunctional);
+            UpThrustUnitCountTotal = UpThrustGroupFunctional.Count;
+            UpThrustUnitCountFunctional = UpThrustGroupFunctional.Count(x => x.IsFunctional); // Get the amount of thruster blocks collected.
+            UpThrustPercentage = UpThrustGroupFunctional.Select(x => x.CurrentThrustPercentage).Average();
             string toDisplay = $"   Current Thrust % = {UpThrustPercentage}.\n" +
                                $"   Total Thrusters in Group = {UpThrustUnitCountFunctional}/{UpThrustUnitCountTotal}.\n";
 

@@ -30,8 +30,16 @@ namespace IngameScript
         {
             get
             {
-                if (LowGas) _generatorsRequested = true;
-                if (GasFull) _generatorsRequested = false;
+                if (LowGas)
+                {
+                    _generatorsRequested = true;
+                }
+
+                if (GasFull)
+                {
+                    _generatorsRequested = false;
+                }
+
                 return _generatorsRequested;
             }
         }
@@ -47,7 +55,10 @@ namespace IngameScript
         {
             #region Check if this should run according to its own frequency.
 
-            if (!base.OnMain(argument, updateSource)) return false;
+            if (!base.OnMain(argument, updateSource))
+            {
+                return false;
+            }
 
             #endregion
             
@@ -57,26 +68,10 @@ namespace IngameScript
                 _gasGeneratorList.ForEach(x => x.Enabled = GeneratorsRequested);
             }
 
-            Ubermensch.Echo($"================================\n" +
-                            $"");
-            Ubermensch.Echo($"GasTank count :: {_gasTankList.Count}.");
-            Ubermensch.Echo($"OxygenTank count :: {_gasTankO2List.Count}.");
-            Ubermensch.Echo($"HydrogenTank count :: {_gasTankH2List.Count}.");
-            Ubermensch.Echo($"GasGenerator count :: {_gasGeneratorList.Count}.");
-            Ubermensch.Echo($"================================");
-            Ubermensch.Echo($"LowOxygenDetected :: {LowOxygen}.");
-            Ubermensch.Echo($"LowHydrogenDetected :: {LowHydrogen}.");
-            Ubermensch.Echo($"================================");
-            Ubermensch.Echo($"GeneratorsRequested :: {GeneratorsRequested}.");
-            Ubermensch.Echo($"================================");
-            Ubermensch.Echo($"OxygenFull :: {OxygenFull}.");
-            Ubermensch.Echo($"HydrogenFull :: {HydrogenFull}.");
-            Ubermensch.Echo($"================================");
-
             return true;
         }
 
-        public override bool TryEcho(out string _txt)
+        public override bool TryEcho(ref string _txt)
         {
             _txt =  $"================================\n" +
                     $"GasTank count :: {_gasTankList.Count}.\n" +
