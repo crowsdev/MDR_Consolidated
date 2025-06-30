@@ -5,19 +5,36 @@ using SpaceEngineers.Game.ModAPI.Ingame;
 
 namespace IngameScript
 {
+    /*
+     * Need to modify code so that h2 tanks are filled one at a time, filling many at same time causes horrible lag.
+     */
     public class FuelManager : Untermensch
     {
-        List<IMyAirVent> _airVentList => GetFuelSystemObjects<IMyAirVent>();
-        List<IMyGasTank> _gasTankList => GetFuelSystemObjects<IMyGasTank>();
-        List<IMyGasTank> _gasTankO2List => GetFuelSystemObjects<IMyGasTank>(x => x.DetailedInfo.Contains("Oxygen"));
-        List<IMyGasTank> _gasTankH2List => GetFuelSystemObjects<IMyGasTank>(x => x.DetailedInfo.Contains("Hydrogen"));
-        List<IMyGasGenerator> _gasGeneratorList => GetFuelSystemObjects<IMyGasGenerator>();
+        #region Settings.
 
         float LowOxygenAirVent = 0.85f;
         float FullOxygenAirVent = 0.9f;
         double LowGasTanks = (double)0.65;
         double FullGasTanks = (double)0.9;
 
+        #endregion
+
+        #region Events
+
+        public delegate void GasTankLevelEvent(GasTankLevelEventArgs args);
+
+        public static event GasTankLevelEvent GasTankLevelAlarm;
+
+        #endregion
+        
+        
+        List<IMyAirVent> _airVentList => GetFuelSystemObjects<IMyAirVent>();
+        List<IMyGasTank> _gasTankList => GetFuelSystemObjects<IMyGasTank>();
+        List<IMyGasTank> _gasTankO2List => GetFuelSystemObjects<IMyGasTank>(x => x.DetailedInfo.Contains("Oxygen"));
+        List<IMyGasTank> _gasTankH2List => GetFuelSystemObjects<IMyGasTank>(x => x.DetailedInfo.Contains("Hydrogen"));
+        List<IMyGasGenerator> _gasGeneratorList => GetFuelSystemObjects<IMyGasGenerator>();
+
+        
         bool LowHydrogen => CheckAnyGasTankLow(_gasTankH2List);
         bool LowOxygen => CheckAnyGasTankLow(_gasTankO2List) || CheckAnyAirVentLow(_airVentList);
         bool LowGas => LowHydrogen || LowOxygen;
@@ -115,7 +132,7 @@ namespace IngameScript
             return LowVentDetected;
         }
 
-        bool CheckAnyGasTankLow(List<IMyGasTank> _myGasTanks)
+        bool  CheckAnyGasTankLow(List<IMyGasTank> _myGasTanks)
         {
             bool LowTanksDetected = false;
 
@@ -174,5 +191,21 @@ namespace IngameScript
             Ubermensch.GridTerminalSystem.GetBlocksOfType<T>(result, _predicate);
             return result;
         }
+
+        #region EventHandlers.
+
+        private void HandleH2TankLevelEvents()
+        {
+            List<IMyTerminalBlock> v0 = new List<IMyTerminalBlock>();
+            Ubermensch.GridTerminalSystem.GetBlocksOfType<IMyGasTank>(v0, IsValidH2);
+        }
+
+        private bool IsValidH2(IMyTerminalBlock _gasTank)
+        {
+            IMyTerminalBlock asTermBlk = (IMyTerminalBlock)_gasTank; 
+            return (asTermBlk.CubeGrid == this.Ubermensch.Me.CubeGrid && asTermBlk.BlockDefinition.SubtypeId.Contains("Hydrogen"));
+        }
+
+        #endregion
     }
 }
