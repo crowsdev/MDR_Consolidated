@@ -5,6 +5,7 @@ using IngameScript.Enums;
 using Sandbox.ModAPI.Ingame;
 using SpaceEngineers.Game.ModAPI.Ingame;
 using VRage.Collections;
+using VRage.Scripting.MemorySafeTypes;
 
 namespace IngameScript
 {
@@ -26,7 +27,7 @@ namespace IngameScript
         // When using 'OneByOne' mode a single H2Tank is turned on until GTE this setting. This loops through all H2Tanks.
         private double H2High = 0.90;
         
-        // Set to 'OneByOne' if tank filling causes too much lag. Otherwise 'AnyLow' mode will fill any tanks that are H2Low concurrently.
+        // Set to 'OneByOne' if tank filling causes too much lag, otherwise 'AnyLow' mode will fill any tanks that are H2Low concurrently.
         // Use the '//' characters to disable 1 of the following 2 lines to select desired TankFillMode. 'AnyLow' mode is selected by default and 'OneByOne' is disabled. 
         
         private TankFillMode H2FillMode = TankFillMode.AnyLow;
@@ -50,7 +51,7 @@ namespace IngameScript
 
         #region Blocks.
 
-        List<IMyAirVent> AirVents
+        MemorySafeList<IMyAirVent> AirVents
         {
             get
             {
@@ -58,7 +59,7 @@ namespace IngameScript
             }
         }
         
-        List<IMyGasTank> GasTanks
+        MemorySafeList<IMyGasTank> GasTanks
         {
             get
             {
@@ -69,23 +70,23 @@ namespace IngameScript
             }
         }
 
-        List<IMyGasTank> O2Tanks
+        MemorySafeList<IMyGasTank> O2Tanks
         {
             get
             {
-                return GasTanks.Where(x => x.DetailedInfo.Contains("Oxygen")).ToList();
+                return (MemorySafeList<IMyGasTank>) GasTanks.Where(x => x.DetailedInfo.Contains("Oxygen")).ToList();
             }
         }
         
-        List<IMyGasTank> H2Tanks
+        MemorySafeList<IMyGasTank> H2Tanks
         {
             get
             {
-                return GasTanks.Where(x => x.DetailedInfo.Contains("Hydrogen")).ToList();
+                return (MemorySafeList<IMyGasTank>) GasTanks.Where(x => x.DetailedInfo.Contains("Hydrogen")).ToList();
             }
         }
 
-        List<IMyGasGenerator> GasGenerators
+        MemorySafeList<IMyGasGenerator> GasGenerators
         {
             get
             {
@@ -186,9 +187,9 @@ namespace IngameScript
             H2Tanks[H2TankToFillIndex].ApplyAction(On);
         }
         
-        private List<T> GetBlocks<T>(Func<T,bool> _predicate = null) where T : class
+        private MemorySafeList<T> GetBlocks<T>(Func<T,bool> _predicate = null) where T : class
         {
-            List<T> result = new List<T>();
+            MemorySafeList<T> result = new MemorySafeList<T>();
             Ubermensch.GridTerminalSystem.GetBlocksOfType<T>(result, _predicate);
             return result;
         }

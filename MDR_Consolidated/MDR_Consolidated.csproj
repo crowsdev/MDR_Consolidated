@@ -8,15 +8,15 @@
         <Platforms>x64</Platforms>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Mal.Mdk2.PbAnalyzers" Version="2.1.13">
+        <PackageReference Include="Mal.Mdk2.PbAnalyzers" Version="2.1.16">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Mal.Mdk2.PbPackager" Version="2.1.5">
+        <PackageReference Include="Mal.Mdk2.PbPackager" Version="2.1.18">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Mal.Mdk2.References" Version="2.2.4"/>
+        <PackageReference Include="Mal.Mdk2.References" Version="2.2.8" />
     </ItemGroup>
     <ItemGroup>
         <None Remove="Instructions.readme"/>
@@ -24,13 +24,6 @@
         <AdditionalFiles Include="thumb.png"/>
     </ItemGroup>
     <ItemGroup>
-      <Content Include="Unsorted\AirlockControl.cs" />
-      <Content Include="Unsorted\AlertManager.cs" />
-      <Content Include="Unsorted\AnimatedAlertPanels.cs" />
-      <Content Include="Unsorted\AutodoorAndAirlockManager.cs" />
-      <Content Include="Unsorted\AutoDoors.cs" />
-      <Content Include="Unsorted\CATRedAlert.cs" />
-      <Content Include="Unsorted\Doors_Latest.cs" />
       <None Remove="AutodoorAndAirlockManager.txt" />
       <Compile Remove="AutodoorAndAirlockManager.cs" />
       <Compile Remove="AlertManager.cs" />
@@ -45,30 +38,24 @@
       <Compile Remove="Doors_Latest.cs" />
       <None Remove="Doors_Latest.txt" />
       <Compile Remove="Unsorted\AutodoorAndAirlockManager.cs" />
-      <Content Include="Unsorted\AutodoorAndAirlockManager.cs" />
       <Compile Remove="Unsorted\AirlockControl.cs" />
-      <Content Include="Unsorted\AirlockControl.cs" />
       <Compile Remove="Unsorted\AlertManager.cs" />
-      <Content Include="Unsorted\AlertManager.cs" />
       <None Remove="Unsorted\AlertManager.txt" />
-      <Content Include="Unsorted\AlertManager.txt" />
       <Compile Remove="Unsorted\AnimatedAlertPanels.cs" />
-      <Content Include="Unsorted\AnimatedAlertPanels.cs" />
       <None Remove="Unsorted\AnimatedAlertPanels.txt" />
-      <Content Include="Unsorted\AnimatedAlertPanels.txt" />
       <None Remove="Unsorted\AutodoorAndAirlockManager.txt" />
-      <Content Include="Unsorted\AutodoorAndAirlockManager.txt" />
       <Compile Remove="Unsorted\AutoDoors.cs" />
-      <Content Include="Unsorted\AutoDoors.cs" />
       <Compile Remove="Unsorted\CATRedAlert.cs" />
-      <Content Include="Unsorted\CATRedAlert.cs" />
       <None Remove="Unsorted\CATRedAlert.txt" />
-      <Content Include="Unsorted\CATRedAlert.txt" />
       <Compile Remove="Unsorted\Doors_Latest.cs" />
-      <Content Include="Unsorted\Doors_Latest.cs" />
       <None Remove="Unsorted\Doors_Latest.txt" />
-      <Content Include="Unsorted\Doors_Latest.txt" />
       <None Remove="Unsorted\SHIELDS.txt" />
-      <Content Include="Unsorted\SHIELDS.txt" />
+      <Compile Remove="Tester.cs" />
+      <Compile Remove="miniHub.cs" />
+      <Compile Remove="HydrogenTankManager.cs" />
+      <Compile Remove="Horizon.cs" />
+    </ItemGroup>
+    <ItemGroup>
+      <Folder Include="Unsorted\" />
     </ItemGroup>
 </Project>

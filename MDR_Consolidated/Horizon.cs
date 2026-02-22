@@ -161,7 +161,7 @@ HEY! DONT EVEN THINK ABOUT TOUCHING BELOW THIS LINE!
 
         #region Main methods
 
-        Horizon(MyGridProgram _parent, UpdateFrequency _freq) : base(_parent, _freq)
+        public Horizon(MyGridProgram _parent, UpdateFrequency _freq) : base(_parent, _freq)
         {
             // Runtime.UpdateFrequency = UpdateFrequency.Update1;
             _runtimeTracker = new RuntimeTracker(new Program()); // change back to 'this'

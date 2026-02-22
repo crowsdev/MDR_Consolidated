@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Sandbox.ModAPI.Ingame;
 using SpaceEngineers.Game.ModAPI.Ingame;
+using VRage.Scripting.MemorySafeTypes;
 
 namespace IngameScript
 {
@@ -18,21 +19,13 @@ namespace IngameScript
         double FullGasTanks = (double)0.9;
 
         #endregion
-
-        #region Events
-
-        public delegate void GasTankLevelEvent(GasTankLevelEventArgs args);
-
-        public static event GasTankLevelEvent GasTankLevelAlarm;
-
-        #endregion
         
         
-        List<IMyAirVent> _airVentList => GetFuelSystemObjects<IMyAirVent>();
-        List<IMyGasTank> _gasTankList => GetFuelSystemObjects<IMyGasTank>();
-        List<IMyGasTank> _gasTankO2List => GetFuelSystemObjects<IMyGasTank>(x => x.DetailedInfo.Contains("Oxygen"));
-        List<IMyGasTank> _gasTankH2List => GetFuelSystemObjects<IMyGasTank>(x => x.DetailedInfo.Contains("Hydrogen"));
-        List<IMyGasGenerator> _gasGeneratorList => GetFuelSystemObjects<IMyGasGenerator>();
+        MemorySafeList<IMyAirVent> _airVentList => GetFuelSystemObjects<IMyAirVent>();
+        MemorySafeList<IMyGasTank> _gasTankList => GetFuelSystemObjects<IMyGasTank>();
+        MemorySafeList<IMyGasTank> _gasTankO2List => GetFuelSystemObjects<IMyGasTank>(x => x.DetailedInfo.Contains("Oxygen"));
+        MemorySafeList<IMyGasTank> _gasTankH2List => GetFuelSystemObjects<IMyGasTank>(x => x.DetailedInfo.Contains("Hydrogen"));
+        MemorySafeList<IMyGasGenerator> _gasGeneratorList => GetFuelSystemObjects<IMyGasGenerator>();
 
         
         bool LowHydrogen => CheckAnyGasTankLow(_gasTankH2List);
@@ -65,19 +58,16 @@ namespace IngameScript
 
         public FuelManager(MyGridProgram _parent, UpdateFrequency _freq) : base(_parent, _freq)
         {
-            // Runtime.UpdateFrequency = UpdateFrequency.Update100;
+            this.Frequency = _freq;
+            this.Ubermensch = _parent;
         }
 
         public override bool OnMain(string argument, UpdateType updateSource)
         {
-            #region Check if this should run according to its own frequency.
-
-            if (!base.OnMain(argument, updateSource))
-            {
-                return false;
-            }
-
-            #endregion
+            // if (!base.OnMain(argument, updateSource))
+            // {
+            //     return false;
+            // }
             
             if (LastGenRequestState != GeneratorsRequested)
             {
@@ -132,7 +122,7 @@ namespace IngameScript
             return LowVentDetected;
         }
 
-        bool  CheckAnyGasTankLow(List<IMyGasTank> _myGasTanks)
+        bool  CheckAnyGasTankLow(MemorySafeList<IMyGasTank> _myGasTanks)
         {
             bool LowTanksDetected = false;
 
@@ -157,7 +147,7 @@ namespace IngameScript
             return LowTanksDetected;
         }
 
-        bool CheckAllAirVentsFull(List<IMyAirVent> _myAirVents)
+        bool CheckAllAirVentsFull(MemorySafeList<IMyAirVent> _myAirVents)
         {
             bool bAllVentsFull = true;
 
@@ -172,7 +162,7 @@ namespace IngameScript
             return bAllVentsFull;
         }
 
-        bool CheckAllGasTanksFull(List<IMyGasTank> _myGasTanks)
+        bool CheckAllGasTanksFull(MemorySafeList<IMyGasTank> _myGasTanks)
         {
             foreach (var gt in _myGasTanks)
             {
@@ -185,27 +175,11 @@ namespace IngameScript
             return true;
         }
 
-        private List<T> GetFuelSystemObjects<T>(Func<T,bool> _predicate = null) where T : class
+        private MemorySafeList<T> GetFuelSystemObjects<T>(Func<T,bool> _predicate = null) where T : class
         {
-            List<T> result = new List<T>();
+            MemorySafeList<T> result = new MemorySafeList<T>();
             Ubermensch.GridTerminalSystem.GetBlocksOfType<T>(result, _predicate);
             return result;
         }
-
-        #region EventHandlers.
-
-        private void HandleH2TankLevelEvents()
-        {
-            List<IMyTerminalBlock> v0 = new List<IMyTerminalBlock>();
-            Ubermensch.GridTerminalSystem.GetBlocksOfType<IMyGasTank>(v0, IsValidH2);
-        }
-
-        private bool IsValidH2(IMyTerminalBlock _gasTank)
-        {
-            IMyTerminalBlock asTermBlk = (IMyTerminalBlock)_gasTank; 
-            return (asTermBlk.CubeGrid == this.Ubermensch.Me.CubeGrid && asTermBlk.BlockDefinition.SubtypeId.Contains("Hydrogen"));
-        }
-
-        #endregion
     }
 }

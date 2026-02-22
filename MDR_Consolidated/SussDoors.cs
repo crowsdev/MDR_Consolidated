@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
 using Sandbox.ModAPI.Ingame;
+using VRage.Scripting.MemorySafeTypes;
 
 namespace IngameScript
 {
@@ -17,10 +17,8 @@ namespace IngameScript
         
         // Milliseconds to wait after opening door until closing it.
         public double CloseDelay = 3000;
-
-        public UpdateFrequency Frequency = UpdateFrequency.Update1;
-
-        public List<IMyDoor> AllDoors = new List<IMyDoor>();
+        
+        public MemorySafeList<IMyDoor> AllDoors = new MemorySafeList<IMyDoor>();
         private bool bDoorOpen;
         private IMyDoor ActiveDoor;
         private DateTime OpenWhen = DateTime.Now;
@@ -30,22 +28,17 @@ namespace IngameScript
         
         public SussDoors(MyGridProgram ubermensch, UpdateFrequency frequency = UpdateFrequency.Update100) : base(ubermensch, frequency)
         {
-            
+            this.Frequency = frequency;
+            this.Ubermensch =  ubermensch;
         }
 
         public override bool OnMain(string argument, UpdateType updateSource)
         {
-            #region Check if this should run according to its own frequency.
-
-            if (!base.OnMain(argument, updateSource))
-            {
-                return false;
-            }
-
-            #endregion
-
-            #region Functional code.
-
+            // if (!base.OnMain(argument, updateSource))
+            // {
+            //     return false;
+            // }
+            
             this.Ubermensch.GridTerminalSystem.GetBlocksOfType<IMyDoor>(AllDoors, x => !x.CustomName.Contains(ExclusionTag));
             
             if (bDoorOpen)
@@ -96,8 +89,6 @@ namespace IngameScript
             }
 
             return true;
-
-            #endregion
         }
 
         public override bool TryEcho(ref string _txt)

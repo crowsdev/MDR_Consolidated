@@ -5,7 +5,7 @@ namespace IngameScript
 {
     public abstract class Untermensch
     {
-        public MyGridProgram Ubermensch { get; private set; } // This is the main script object.
+        public MyGridProgram Ubermensch { get; set; } // This is the main script object.
         public UpdateFrequency Frequency { get; set; }
 
         public Dictionary<UpdateFrequency, float> FrequencyFloats = new Dictionary<UpdateFrequency, float>()
@@ -28,29 +28,25 @@ namespace IngameScript
 
         public virtual bool OnMain(string argument, UpdateType updateSource)
         {
-            #region Count everytime main script runs at its frequency and check if this slave script should run with regard to its own frequency.
-
-            if (LastTick++ >= TickFactor)
-            {
-                LastTick = 0.0f;
-                return true;
-            }
+            // if (LastTick++ >= TickFactor)
+            // {
+            //     LastTick = 0.0f;
+            //     return true;
+            // }
 
             return false;
-
-            #endregion
         }
 
         public virtual void OnSave()
         {
-            // Override derived classes.
+            // Override in derived classes.
         }
 
         public virtual bool TryEcho(ref string _txt)
         {
             _txt = null;
             return false;
-            // Do not call base.TryEcho from override methods.
+            // Do not call base.TryEcho in derived class's override methods.
         }
     }
 }

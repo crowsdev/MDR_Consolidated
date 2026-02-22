@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Sandbox.ModAPI.Ingame;
+using VRage.Scripting.MemorySafeTypes;
 using VRageMath;
 
 namespace IngameScript
@@ -14,7 +15,7 @@ namespace IngameScript
          * 2 = door was 1 but has now been closed.
          * 3 = timer finished, door 2 opened.
          */
-        private Dictionary<IMyDoor, int> DoorsInManagedSequence = new Dictionary<IMyDoor, int>();
+        private MemorySafeDictionary<IMyDoor, int> DoorsInManagedSequence = new MemorySafeDictionary<IMyDoor, int>();
 
         // You can add an additional delay (in seconds) between closing the first airlock door and opening the second one (Default: 0).
         private double airlockDelaySeconds = 0;
@@ -27,19 +28,8 @@ namespace IngameScript
         private bool autoCloseHangarDoors = true;
 
         private double autoCloseHangarDoorsSeconds = 10;
-        // Isy's Simple Doors
-        // ===============
-        // Version: 1.0.8
-        // Date: 2023-05-24
 
-        // =======================================================================================
-        //                                                                            --- Configuration ---
-        // =======================================================================================
-
-        // --- Door Auto Close ---
-        // =======================================================================================
-
-        // The script will automatically close a door 1 seconds after it's being opened. Change this value here if needed:
+        // The script will automatically close a door 2 seconds after it's being opened. Change this value here if needed:
         private double autoCloseSeconds = 2;
 
         private string[] b =
@@ -77,13 +67,13 @@ namespace IngameScript
         //                  Don't change anything beyond this point!
         // =======================================================================================
 
-        private List<IMyDoor> ManagedDoors = new List<IMyDoor>();
-        private List<IMyDoor> AllNonHangarDoors = new List<IMyDoor>();
-        private List<IMyDoor> DmgDoors = new List<IMyDoor>();
+        private MemorySafeList<IMyDoor> ManagedDoors = new MemorySafeList<IMyDoor>();
+        private MemorySafeList<IMyDoor> AllNonHangarDoors = new MemorySafeList<IMyDoor>();
+        private MemorySafeList<IMyDoor> DmgDoors = new MemorySafeList<IMyDoor>();
         private int LastManagedDoorsCount = 0;
-        private Dictionary<IMyDoor, DateTime> ManagedHangarDoors = new Dictionary<IMyDoor, DateTime>();
-        private Dictionary<IMyDoor, DateTime> DoorsOnTimerDelay = new Dictionary<IMyDoor, DateTime>();
-        private Dictionary<IMyDoor, IMyDoor> AirlockPairs = new Dictionary<IMyDoor, IMyDoor>();
+        private MemorySafeDictionary<IMyDoor, DateTime> ManagedHangarDoors = new MemorySafeDictionary<IMyDoor, DateTime>();
+        private MemorySafeDictionary<IMyDoor, DateTime> DoorsOnTimerDelay = new MemorySafeDictionary<IMyDoor, DateTime>();
+        private MemorySafeDictionary<IMyDoor, IMyDoor> AirlockPairs = new MemorySafeDictionary<IMyDoor, IMyDoor>();
 
         public Doors(MyGridProgram _parent, UpdateFrequency _freq) : base(_parent, _freq)
         {

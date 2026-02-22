@@ -1,13 +1,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using Sandbox.ModAPI.Ingame;
+using VRage.Scripting.MemorySafeTypes;
 
 namespace IngameScript
 {
     public class Thrust : Untermensch
     {
         internal string UpThrustGroupName;
-        internal List<IMyThrust> UpThrustGroupFunctional;
+        internal MemorySafeList<IMyThrust> UpThrustGroupFunctional;
         internal float UpThrustPercentage;
         internal int UpThrustUnitCountTotal;
         internal int UpThrustUnitCountFunctional;
@@ -18,7 +19,7 @@ namespace IngameScript
         public Thrust(MyGridProgram _parent, UpdateFrequency _freq) : base(_parent, _freq)
         {
             UpThrustGroupName = "DD1 - LIFT THRUST";
-            UpThrustGroupFunctional = new List<IMyThrust>();
+            UpThrustGroupFunctional = new MemorySafeList<IMyThrust>();
             UpThrustPercentage = 0f;
             UpThrustUnitCountFunctional = 0;
             // Ubermensch.Me.CustomData = "Pending....";
@@ -39,7 +40,14 @@ namespace IngameScript
             Ubermensch.GridTerminalSystem.GetBlocksOfType(UpThrustGroupFunctional);
             UpThrustUnitCountTotal = UpThrustGroupFunctional.Count;
             UpThrustUnitCountFunctional = UpThrustGroupFunctional.Count(x => x.IsFunctional); // Get the amount of thruster blocks collected.
-            UpThrustPercentage = UpThrustGroupFunctional.Select(x => x.CurrentThrustPercentage).Average();
+            if (UpThrustGroupFunctional.Count > 0)
+            {
+                UpThrustPercentage = UpThrustGroupFunctional.Select(x => x.CurrentThrustPercentage).Average();
+            }
+            else
+            {
+                UpThrustPercentage = 0;
+            }
             string toDisplay = $"   Current Thrust % = {UpThrustPercentage}.\n" +
                                $"   Total Thrusters in Group = {UpThrustUnitCountFunctional}/{UpThrustUnitCountTotal}.\n";
 

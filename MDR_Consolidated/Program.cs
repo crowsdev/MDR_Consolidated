@@ -16,40 +16,43 @@ using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI.Ingame;
 using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
+using VRage.Scripting.MemorySafeTypes;
 using VRageMath;
 
 namespace IngameScript
 {
-    public partial class Program : MyGridProgram
+    public class Program : MyGridProgram
     {
-        public Dictionary<UntermenschType,Untermensch> Judenlager;
-        public UpdateFrequency Frequency = UpdateFrequency.Update100;
+        public MemorySafeDictionary<UntermenschType,Untermensch> Judenlager;
+        public UpdateFrequency Frequency = UpdateFrequency.Update1;
         
         public Program()
         {
-            Judenlager = new Dictionary<UntermenschType,Untermensch>()
+            Judenlager = new MemorySafeDictionary<UntermenschType,Untermensch>()
             {
-                { UntermenschType.Thrust, new Thrust(this, UpdateFrequency.Update10) },
-                { UntermenschType.Doors, new Doors(this, UpdateFrequency.Update10) },
-                { UntermenschType.FuelManager, new FuelManager(this, UpdateFrequency.Update100) }
+                { UntermenschType.Thrust, new Thrust(this, UpdateFrequency.Update1) },
+                { UntermenschType.Doors, new SussDoors(this, UpdateFrequency.Update1) },
+                { UntermenschType.FuelManager, new FuelManager(this, UpdateFrequency.Update1) }
             };
 
-            #region Set update-frequency to fastest required by slaves.
-
-            if (Judenlager.Any(x => x.Value.Frequency == UpdateFrequency.Update1))
-            {
-                Frequency = UpdateFrequency.Update1;
-            }
-            else if (Judenlager.Any(x => x.Value.Frequency == UpdateFrequency.Update10))
-            {
-                Frequency = UpdateFrequency.Update10;
-            }
-            else if (Judenlager.Any(x => x.Value.Frequency == UpdateFrequency.Update100))
-            {
-                Frequency = UpdateFrequency.Update100;
-            }
-
-            #endregion
+            Runtime.UpdateFrequency = UpdateFrequency.Update1;
+            
+            // #region Set update-frequency to fastest required by slaves.
+// 
+            // if (Judenlager.Any(x => x.Value.Frequency == UpdateFrequency.Update1))
+            // {
+            //     Frequency = UpdateFrequency.Update1;
+            // }
+            // else if (Judenlager.Any(x => x.Value.Frequency == UpdateFrequency.Update10))
+            // {
+            //     Frequency = UpdateFrequency.Update10;
+            // }
+            // else // if (Judenlager.Any(x => x.Value.Frequency == UpdateFrequency.Update100))
+            // {
+            //     Frequency = UpdateFrequency.Update100;
+            // }
+// 
+            // #endregion
         }
 
         public void Save()
